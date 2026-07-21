@@ -169,6 +169,16 @@
   .slegend .d2{background:#fff;outline:2px solid var(--pink);outline-offset:-1px}
   .slegend .d3{background:rgba(190,150,180,.2)}
   .linklike{background:none;border:none;color:var(--accent-ink);font-weight:700;font-size:.85rem;padding:4px 0;cursor:pointer;text-decoration:underline}
+  /* 확인 모달 */
+  .overlay{position:fixed;inset:0;background:rgba(70,45,60,.4);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+     display:flex;align-items:center;justify-content:center;z-index:100;padding:24px;animation:fadeUp .2s ease}
+  .modal{max-width:330px;width:100%;text-align:center}
+  .modal .em{font-size:2.2rem}
+  .modal h2{margin:6px 0 6px}
+  .modal .row2{display:flex;gap:10px;margin-top:18px}
+  .modal .row2 button{flex:1;padding:13px;border-radius:14px;font-weight:800;font-size:1rem;cursor:pointer;border:none}
+  .modal .cancel{background:var(--accent-soft);color:var(--accent-ink)}
+  .modal .danger{background:linear-gradient(135deg,#ff8fa8,#ff6f95);color:#fff;box-shadow:0 8px 20px rgba(255,120,150,.35)}
 </style>
 </head>
 <body>
@@ -496,7 +506,7 @@ function renderDash(p,day){
     let d=loadDone(); if(d.includes(day)) d=d.filter(x=>x!==day); else d.push(day);
     saveDone(d); renderDash(p,day);
   };
-  document.getElementById("reset").onclick=()=>{ location.hash=''; start(); };
+  document.getElementById("reset").onclick=()=>confirmReset();
   document.getElementById("share").onclick=()=>{
     const txt=`[오늘의 다이어트 플랜 · DAY ${day}/${total}]\n목표 칼로리 ${c.target}kcal\n운동: ${plan.focus}\n${vids.map(v=>'▶ '+v.title+' ('+v.channel+') https://youtu.be/'+v.id).join('\n')}`;
     if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); }
@@ -579,6 +589,20 @@ function loadBoard(){
   }).catch(()=>{ b.textContent="연결 대기 중… 창작자가 그룹 설정을 마치면 표시돼요."; });
 }
 
+function confirmReset(){
+  const ov=document.createElement("div"); ov.className="overlay";
+  ov.innerHTML=`<div class="modal card">
+    <div class="em">⚠️</div>
+    <h2>처음부터 다시 설정할까요?</h2>
+    <p class="note">입력한 정보가 초기화되고 처음 화면으로 돌아가요.<br>(완료 기록은 그대로 남아요)</p>
+    <div class="row2"><button class="cancel" id="cCancel">취소</button><button class="danger" id="cOk">초기화</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  const close=()=>ov.remove();
+  ov.querySelector("#cCancel").onclick=close;
+  ov.addEventListener("click",e=>{ if(e.target===ov) close(); });
+  ov.querySelector("#cOk").onclick=()=>{ close(); location.hash=""; start(); };
+}
 function start(){
   const p=loadProfile();
   if(p && p.startDate) renderDash(p,currentDayFor(p));
