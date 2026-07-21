@@ -152,6 +152,22 @@
   .mfill{height:100%;border-radius:999px;background:linear-gradient(90deg,#ff9cbe,#b79bff);
      box-shadow:0 1px 6px rgba(255,140,190,.4);transition:width .6s ease}
   .mcard.me .mn::after{content:" (나)";color:var(--muted);font-weight:600;font-size:.8rem}
+  /* 전체 스케줄판 */
+  .sched{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-top:12px}
+  .scell{aspect-ratio:1;border-radius:12px;border:1.5px solid rgba(190,150,180,.28);
+     background:rgba(255,255,255,.7);color:#9a8b96;font-weight:800;font-size:.9rem;
+     display:flex;align-items:center;justify-content:center;transition:transform .12s ease}
+  .scell:hover{transform:translateY(-2px)}
+  .scell.done{background:linear-gradient(135deg,#ff9cbe,#b79bff);color:#fff;border-color:transparent;
+     box-shadow:0 5px 14px rgba(255,140,190,.35)}
+  .scell.rest{background:rgba(190,150,180,.12);color:#c3b3bd;font-size:.78rem}
+  .scell.cur{outline:2.5px solid var(--pink);outline-offset:1px}
+  .slegend{display:flex;gap:14px;justify-content:center;margin-top:12px;font-size:.78rem;color:var(--muted)}
+  .slegend span{display:flex;align-items:center;gap:5px}
+  .slegend .dot{width:11px;height:11px;border-radius:4px;display:inline-block}
+  .slegend .d1{background:linear-gradient(135deg,#ff9cbe,#b79bff)}
+  .slegend .d2{background:#fff;outline:2px solid var(--pink);outline-offset:-1px}
+  .slegend .d3{background:rgba(190,150,180,.2)}
 </style>
 </head>
 <body>
@@ -177,7 +193,15 @@ const DATA = {
     U2:{title:"단기간에 확 빠지는 팔뚝살 운동 10분 (초보)",channel:"소피요가 Sophie Yoga",id:"X2VjRyQ5A64"},
     U3:{title:"팔뚝살 타파 팔 운동 홈트",channel:"ns윤지",id:"tn_u7jpmK8M"},
     S1:{title:"자기 전·아침에 따라하는 스트레칭",channel:"피지컬갤러리",id:"aTcbqto_Tg0"},
-    S2:{title:"자기 전 스트레칭 (GOOD NIGHT STRETCHING)",channel:"강하나 스트레칭",id:"Q-C_NUKQr9g"}
+    S2:{title:"자기 전 스트레칭 (GOOD NIGHT STRETCHING)",channel:"강하나 스트레칭",id:"Q-C_NUKQr9g"},
+    MC1:{title:"뱃살이 흘러내리는 20분 유산소 (도구X)",channel:"다솔맘 홈트레이닝",id:"QjuHjh1f12g"},
+    MF1:{title:"슬림 탄탄해지는 여자 전신 홈트 루틴",channel:"홈블리 FITVELY",id:"ayM9g-N-yAo"},
+    MF2:{title:"집에서 확실하게 근력 기르는 여자 근력운동",channel:"Minsoo Go",id:"d6pLCo6Ck0k"},
+    HC1:{title:"30분 고강도 유산소 홈트 (땀폭발)",channel:"다노언니 제시",id:"UJzXSQv0MbA"},
+    HC2:{title:"칼로리 불태우는 땀폭발 10분 전신 유산소",channel:"에이핏 afit",id:"xHes9dxefDs"},
+    HH1:{title:"20분 고강도 인터벌 HIIT 홈트",channel:"빅씨스 Bigsis",id:"5bukb6aeobs"},
+    HF1:{title:"전신 살빼기 FULLBODY HIIT (지방연소)",channel:"Allblanc TV",id:"oEuy2mNjuTI"},
+    HCO1:{title:"HIIT 15분 · 복근 라인 드러나는 고강도",channel:"빅씨스 Bigsis",id:"IgsyvlKKFzM"}
   }
 };
 /* 주간 템플릿(7일 패턴)을 입력 기간(주)만큼 반복 → 기간에 맞는 프로그램 자동 생성 */
@@ -190,20 +214,33 @@ const WEEK_TEMPLATE = [
   {focus:"전신 근력·올인원",  warmup:true,  pools:["fullbody"]},
   {focus:"휴식",            warmup:false, pools:["stretch"], rest:true}
 ];
-const POOLS = {
-  cardio:["A1","A2","A3","A4","A5"],
-  fullbody:["A6","A7"],
-  lower:["L1"],
-  core:["C1","C2","C3"],
-  upper:["U1","U2","U3"],
-  stretch:["S1","S2"]
+/* 난이도 모드별 영상 풀 — 초보/중급/빡센 각기 다른 엄선 영상 */
+const POOLS_BY_MODE = {
+  beginner:{
+    cardio:["A1","A2","A3","A4","A5"], fullbody:["A6","A7"], lower:["L1"],
+    core:["C1","C2","C3"], upper:["U1","U2","U3"], stretch:["S1","S2"]
+  },
+  intermediate:{
+    cardio:["MC1","A5","A4","A3"], fullbody:["MF1","MF2","A6"], lower:["MF2","L1"],
+    core:["C2","C3","C1"], upper:["MF1","U1","U3"], stretch:["S1","S2"]
+  },
+  hard:{
+    cardio:["HC1","HC2","HH1"], fullbody:["HF1","HH1"], lower:["HF1","HH1"],
+    core:["HCO1","HH1"], upper:["HF1","HCO1"], stretch:["S1","S2"]
+  }
 };
-function buildProgram(weeks){
+const MODES = {
+  beginner:{l:"초보자",d:"기초 10~15분·저강도"},
+  intermediate:{l:"중급자",d:"15~20분·근력＋유산소 강화"},
+  hard:{l:"빡센(고강도)",d:"HIIT·고강도 20~30분"}
+};
+function buildProgram(weeks, mode){
+  const POOLS=POOLS_BY_MODE[mode]||POOLS_BY_MODE.beginner;
   const ptr={}, days=[], total=weeks*7;
   for(let i=0;i<total;i++){
     const t=WEEK_TEMPLATE[i%7];
     const main=t.pools.map(pn=>{
-      const arr=POOLS[pn]; const k=arr[(ptr[pn]||0)%arr.length]; ptr[pn]=(ptr[pn]||0)+1; return k;
+      const arr=POOLS[pn]||POOLS_BY_MODE.beginner[pn]; const k=arr[(ptr[pn]||0)%arr.length]; ptr[pn]=(ptr[pn]||0)+1; return k;
     });
     days.push({day:i+1, week:Math.floor(i/7)+1, focus:t.focus, warmup:t.warmup, main, rest:!!t.rest});
   }
@@ -312,6 +349,10 @@ function renderOnboard(prefill,msg){
       <select id="activity">
         ${Object.entries(ACT).map(([k,v])=>`<option value="${k}" ${p.activity===k?'selected':''}>${v.l}</option>`).join('')}
       </select>
+      <label>운동 강도 모드 — 모드마다 다른 맞춤 영상이 나와요 💪</label>
+      <select id="mode">
+        ${Object.entries(MODES).map(([k,v])=>`<option value="${k}" ${(p.mode||'beginner')===k?'selected':''}>${v.l} · ${v.d}</option>`).join('')}
+      </select>
       <label>그룹에서 보일 이름 (선택 · 함께하기용)</label>
       <input id="dispName" type="text" maxlength="20" value="${p.name?esc(p.name):''}" placeholder="예: 상협">
       <label class="check"><input id="pregnant" type="checkbox" ${p.pregnant?'checked':''}> 현재 임신 또는 수유 중이에요</label>
@@ -329,6 +370,7 @@ function renderOnboard(prefill,msg){
       targetWeight:+document.getElementById("targetWeight").value,
       weeks:+document.getElementById("weeks").value,
       activity:document.getElementById("activity").value,
+      mode:document.getElementById("mode").value,
       name:(document.getElementById("dispName").value||"").trim(),
       achieved:(prefill&&prefill.achieved)||false,
       pregnant:document.getElementById("pregnant").checked,
@@ -370,8 +412,10 @@ function currentDayFor(p){
 
 function renderDash(p,day){
   const c=compute(p);
-  const program=buildProgram(p.weeks);
+  const program=buildProgram(p.weeks, p.mode||'beginner');
   const total=program.length;
+  const mk={b:Math.round(c.target*.25), l:Math.round(c.target*.30), d:Math.round(c.target*.30), s:Math.round(c.target*.15)};
+  const protLo=Math.round(p.curWeight*1.2), protHi=Math.round(p.curWeight*1.6);
   day=Math.min(total,Math.max(1,day));
   const plan=program[day-1];
   const menu=bandMenus(c.target)[(day-1)%3];
@@ -382,7 +426,7 @@ function renderDash(p,day){
   const finished=currentDayFor(p)>=total && day===total;
   app.innerHTML=`
     <h1>오늘의 플랜</h1>
-    <p class="sub">목표 ${p.targetWeight}kg · ${p.weeks}주(${total}일) · 안전 속도 주 ${Math.min(1,c.weeklyRate).toFixed(2)}kg</p>
+    <p class="sub">목표 ${p.targetWeight}kg · ${p.weeks}주(${total}일) · ${esc((MODES[p.mode]||MODES.beginner).l)} · 안전 속도 주 ${Math.min(1,c.weeklyRate).toFixed(2)}kg</p>
 
     ${finished?`<div class="done-view"><img class="celebrate" src="images/celebrate.png" alt="" onerror="this.style.display='none'">🎉 ${p.weeks}주 프로그램의 마지막 날이에요. 정말 잘 해냈어요!</div>`:``}
 
@@ -399,12 +443,13 @@ function renderDash(p,day){
     <div class="card">
       <h2>🍽️ 오늘의 식단</h2>
       <div class="kcal">${c.target.toLocaleString()}<small> kcal / 일 목표</small></div>
+      <p class="note">현재 체중 ${p.curWeight}kg 기준으로 계산했어요 · 단백질 목표 약 <b style="color:var(--accent-ink)">${protLo}~${protHi}g</b>/일</p>
       ${c.floored?`<p class="note" style="color:var(--warn)">계산상 더 낮았지만 건강 최소선(1,200kcal)으로 올렸어요.</p>`:``}
       <div style="margin-top:10px">
-        <div class="meal"><div class="t">아침</div><div class="d">${esc(menu.b)}</div></div>
-        <div class="meal"><div class="t">점심</div><div class="d">${esc(menu.l)}</div></div>
-        <div class="meal"><div class="t">저녁</div><div class="d">${esc(menu.d)}</div></div>
-        <div class="meal"><div class="t">간식</div><div class="d">${esc(menu.s)}</div></div>
+        <div class="meal"><div class="t">아침 · 약 ${mk.b.toLocaleString()}kcal</div><div class="d">${esc(menu.b)}</div></div>
+        <div class="meal"><div class="t">점심 · 약 ${mk.l.toLocaleString()}kcal</div><div class="d">${esc(menu.l)}</div></div>
+        <div class="meal"><div class="t">저녁 · 약 ${mk.d.toLocaleString()}kcal</div><div class="d">${esc(menu.d)}</div></div>
+        <div class="meal"><div class="t">간식 · 약 ${mk.s.toLocaleString()}kcal</div><div class="d">${esc(menu.s)}</div></div>
       </div>
       <div class="macro">${MACRO}</div>
     </div>
@@ -422,6 +467,16 @@ function renderDash(p,day){
         <button class="done-btn ${isDone?'on':''}" id="done">${isDone?'✓ 오늘 완료!':'오늘 완료 체크'}</button>
         <span class="streak">완료 ${doneInRange} / ${total}일</span>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>📅 전체 스케줄</h2>
+      <p class="note">완료 <b style="color:var(--accent-ink)">${doneInRange}</b> / ${total}일 · 칸을 누르면 그날로 이동해요</p>
+      <div class="sched">${program.map(d=>{
+        const dn=done.includes(d.day);
+        return `<button class="scell${dn?' done':''}${d.day===day?' cur':''}${d.rest?' rest':''}" data-day="${d.day}" title="${d.week}주차 · ${esc(d.focus)}">${(d.rest&&!dn)?'휴':d.day}</button>`;
+      }).join('')}</div>
+      <div class="slegend"><span><i class="dot d1"></i>완료</span><span><i class="dot d2"></i>오늘</span><span><i class="dot d3"></i>휴식</span></div>
     </div>
 
     <div class="card" id="groupCard"></div>
@@ -448,6 +503,7 @@ function renderDash(p,day){
     else { alert(txt); }
   };
 
+  Array.from(document.querySelectorAll('.scell')).forEach(el=>{ el.onclick=()=>renderDash(p, +el.dataset.day); });
   renderGroupCard(p);
   postProgress(p);
 }
