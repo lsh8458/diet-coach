@@ -168,6 +168,7 @@
   .slegend .d1{background:linear-gradient(135deg,#ff9cbe,#b79bff)}
   .slegend .d2{background:#fff;outline:2px solid var(--pink);outline-offset:-1px}
   .slegend .d3{background:rgba(190,150,180,.2)}
+  .linklike{background:none;border:none;color:var(--accent-ink);font-weight:700;font-size:.85rem;padding:4px 0;cursor:pointer;text-decoration:underline}
 </style>
 </head>
 <body>
@@ -509,31 +510,54 @@ function renderDash(p,day){
 }
 
 /* ---------- 함께하기 카드 ---------- */
+function appBaseUrl(){ return location.href.split(/[?#]/)[0]; }
+function shareOrCopy(text, url, doneMsg){
+  if(navigator.share){ const pl={title:"다이어트 함께하기", text:text}; if(url) pl.url=url; navigator.share(pl).catch(()=>{}); }
+  else if(navigator.clipboard){ navigator.clipboard.writeText(text+(url?("\n"+url):"")); alert(doneMsg||"복사했어요. 카카오톡에 붙여넣기 하세요!"); }
+  else { alert(text+(url?("\n"+url):"")); }
+}
+function progressLine(p){
+  const total=p.weeks*7; const done=loadDone().filter(d=>d>=1&&d<=total).length;
+  const pct=total?Math.round(done/total*100):0; const cur=currentDayFor(p);
+  const nm=(p.name||"나"); const em=pct>=80?"🏆":pct>=40?"🔥":"💪";
+  return `[다이어트 함께하기] ${nm} · DAY ${cur}/${total} · 완료율 ${pct}% ${em}${p.achieved?" · 목표달성!":""}`;
+}
 function renderGroupCard(p){
   const el=document.getElementById("groupCard"); if(!el) return;
   const g=loadGroup();
-  if(!g.endpoint){
-    el.innerHTML=`<h2>👭 함께하기 (선택)</h2>
-      <p class="note">최대 3명을 초대해 서로의 진행률·목표달성을 확인할 수 있어요. 먼저 구글 시트 연동 주소(Apps Script 웹앱 URL)가 필요해요 — 동봉한 설정 가이드를 한 번만 따라 하면 돼요.</p>
-      <label>연동 주소 (Apps Script 웹앱 URL)</label>
-      <input id="epInput" type="text" placeholder="https://script.google.com/macros/s/.../exec">
-      <button class="btn" id="epGo">그룹 시작</button>`;
-    el.querySelector("#epGo").onclick=()=>{
-      const ep=el.querySelector("#epInput").value.trim();
-      if(!/^https:\/\/script\.google\.com\/macros\/.*\/exec/.test(ep)){ alert("올바른 Apps Script 웹앱 URL을 붙여넣어 주세요. (…/exec 로 끝나야 해요)"); return; }
-      saveGroup({endpoint:ep}); postProgress(p); renderGroupCard(p);
-    };
-    return;
-  }
-  el.innerHTML=`<h2>👭 우리 그룹</h2>
-    <label class="check" style="margin-top:0"><input id="achv" type="checkbox" ${p.achieved?"checked":""}> 나는 목표를 달성했어요 🎉 (그룹에 공유)</label>
-    <div id="board" class="note" style="margin-top:12px">불러오는 중…</div>
-    <div class="tools"><button id="invite">초대 링크 복사</button><button id="refresh">새로고침</button></div>
-    <p class="note">진행률·목표달성 여부만 공유돼요. 체중 등 개인정보는 공유되지 않아요.</p>`;
-  el.querySelector("#achv").onchange=(e)=>{ p.achieved=e.target.checked; saveProfile(p); postProgress(p).then(()=>loadBoard()); };
-  el.querySelector("#invite").onclick=()=>{ const L=inviteLink(); if(navigator.clipboard){ navigator.clipboard.writeText(L); alert("초대 링크를 복사했어요. 카톡으로 친구에게 보내세요!\n(내 개인정보는 링크에 포함되지 않아요)"); } else alert(L); };
-  el.querySelector("#refresh").onclick=()=>loadBoard();
-  loadBoard();
+  const invite="우리 같이 홈트 다이어트 해요! 💗\n각자 이 앱에서 내 플랜 받고, 매일 완료하면 단톡방에 진행 공유해요 👇";
+  const inviteUrl=g.endpoint?inviteLink():appBaseUrl();
+  el.innerHTML=`<h2>👭 함께하기</h2>
+    <p class="note" style="margin-top:0">설정 없이 바로 시작! 친구를 카카오톡으로 초대하고, 매일 진행을 단톡방에 공유하며 함께 해요. (진행률만 공유돼요)</p>
+    <button class="btn" id="kkInvite">💬 카카오톡으로 초대하기</button>
+    <button class="done-btn" id="kkShare" style="margin-top:10px;width:100%">📤 내 진행 카톡으로 공유</button>
+    <label class="check"><input id="achv" type="checkbox" ${p.achieved?"checked":""}> 목표를 달성했어요 🎉 (공유 메시지에 표시)</label>
+    ${g.endpoint?`
+      <div style="margin-top:14px">
+        <div id="board" class="note">불러오는 중…</div>
+        <button class="linklike" id="refresh" style="margin-top:6px">↻ 실시간 진행판 새로고침</button>
+      </div>`:`
+      <button class="linklike" id="advToggle" style="margin-top:12px">고급: 실시간 자동 진행판 연동 ▾</button>
+      <div id="advBox" style="display:none;margin-top:8px">
+        <p class="note">구글시트 연동 주소(Apps Script …/exec)를 넣으면, 카톡 공유 없이 앱 안에서 서로 진행이 자동으로 떠요. (설정 필요)</p>
+        <input id="epInput" type="text" placeholder="https://script.google.com/macros/s/.../exec">
+        <button class="btn ghost" id="epGo" style="margin-top:8px">자동 진행판 연동</button>
+      </div>`}`;
+  el.querySelector("#kkInvite").onclick=()=>shareOrCopy(invite, inviteUrl, "초대 메시지를 복사했어요! 카카오톡 단톡방에 붙여넣기 하세요.");
+  el.querySelector("#kkShare").onclick=()=>shareOrCopy(progressLine(p), null, "내 진행을 복사했어요! 카톡 단톡방에 붙여넣기 하세요.");
+  const achv=el.querySelector("#achv");
+  if(achv) achv.onchange=(e)=>{ p.achieved=e.target.checked; saveProfile(p); if(loadGroup().endpoint) postProgress(p).then(()=>loadBoard()); };
+  const adv=el.querySelector("#advToggle");
+  if(adv) adv.onclick=()=>{ const bx=el.querySelector("#advBox"); bx.style.display=(bx.style.display==="none")?"block":"none"; };
+  const epGo=el.querySelector("#epGo");
+  if(epGo) epGo.onclick=()=>{
+    const ep=el.querySelector("#epInput").value.trim();
+    if(!/^https:\/\/script\.google\.com\/macros\/.*\/exec/.test(ep)){ alert("올바른 Apps Script 웹앱 URL(…/exec)을 넣어주세요."); return; }
+    saveGroup({endpoint:ep}); postProgress(p); renderGroupCard(p);
+  };
+  const rf=el.querySelector("#refresh");
+  if(rf) rf.onclick=()=>loadBoard();
+  if(g.endpoint) loadBoard();
 }
 function loadBoard(){
   const b=document.getElementById("board"); if(!b) return;
