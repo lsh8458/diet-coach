@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>홈트 다이어트 코치 (MVP-0)</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css');
+  :root{
+    --bg:#fff6f9; --card:rgba(255,255,255,.72); --ink:#463a43; --muted:#7c6b77;
+    --pink:#ff8fb1; --lav:#b28dff;
+    --accent:#ff8fb1; --accent-ink:#b23a6d; --accent-soft:#ffe6f0;
+    --line:rgba(190,150,180,.24); --good:#3f9e77; --warn:#b57a1e; --danger:#c14d78;
+    --glow:0 14px 44px rgba(255,150,195,.20);
+    --shadow:0 14px 44px rgba(255,150,195,.20);
+    --grad:linear-gradient(92deg,#e0568f,#7c58ff);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);position:relative;min-height:100vh;
+    font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    line-height:1.58;-webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1000px 620px at 8% -6%, #ffe1ec 0%, rgba(255,225,236,0) 56%),
+      radial-gradient(900px 620px at 104% 2%, #ece0ff 0%, rgba(236,224,255,0) 55%),
+      radial-gradient(820px 720px at 50% 112%, #fdeede 0%, rgba(253,238,222,0) 55%),
+      linear-gradient(160deg,#fff6f9 0%,#f6f0ff 100%);
+    background-attachment:fixed;}
+  body::before,body::after{content:"";position:fixed;z-index:-1;border-radius:50%;filter:blur(64px);opacity:.5;pointer-events:none}
+  body::before{width:300px;height:300px;left:-90px;top:70px;background:radial-gradient(circle,#ffc2d8,transparent 70%);animation:floaty 9s ease-in-out infinite}
+  body::after{width:340px;height:340px;right:-120px;top:42%;background:radial-gradient(circle,#cdb6ff,transparent 70%);animation:floaty 12s ease-in-out infinite reverse}
+  .wrap{max-width:560px;margin:0 auto;padding:20px 16px 60px}
+  h1{font-size:1.35rem;margin:0 0 4px}
+  h2{font-size:1.05rem;margin:0 0 12px}
+  .sub{color:var(--muted);font-size:.9rem;margin:0 0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+  label{display:block;font-size:.9rem;font-weight:600;margin:14px 0 6px}
+  input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;
+    font-size:1rem;background:#fffdfc;color:var(--ink)}
+  input:focus,select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .row{display:flex;gap:10px}
+  .row>div{flex:1}
+  .check{display:flex;align-items:flex-start;gap:9px;margin-top:12px;font-size:.9rem;font-weight:500}
+  .check input{width:auto;margin-top:3px}
+  button{font-family:inherit;cursor:pointer;border:none}
+  .btn{width:100%;padding:14px;background:var(--accent);color:#fff;border-radius:12px;
+    font-size:1.05rem;font-weight:700;margin-top:20px;transition:.15s}
+  .btn:hover{background:var(--accent-ink)}
+  .btn.ghost{background:var(--accent-soft);color:var(--accent-ink)}
+  .banner{padding:12px 14px;border-radius:10px;font-size:.9rem;margin-top:14px;display:none}
+  .banner.show{display:block}
+  .banner.err{background:#fdeeed;color:var(--danger);border:1px solid #f3cfcc}
+  .banner.warn{background:#fdf4e6;color:var(--warn);border:1px solid #f0dcb4}
+  .pill{display:inline-block;background:var(--accent-soft);color:var(--accent-ink);
+    font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:999px}
+  .kcal{font-size:2rem;font-weight:800;color:var(--accent-ink);letter-spacing:-.5px}
+  .kcal small{font-size:.95rem;color:var(--muted);font-weight:600}
+  .meal{padding:10px 0;border-bottom:1px dashed var(--line)}
+  .meal:last-child{border-bottom:none}
+  .meal .t{font-weight:700;font-size:.85rem;color:var(--accent-ink)}
+  .meal .d{font-size:.95rem}
+  .daynav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .daynav button{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:8px 14px;font-size:1rem;color:var(--ink)}
+  .daynav button:disabled{opacity:.35}
+  .daynav .now{text-align:center}
+  .daynav .now b{font-size:1.1rem}
+  .wk{font-size:.75rem;color:var(--muted);display:block;margin-top:2px}
+  .video-wrap{position:relative;padding-bottom:56.25%;height:0;border-radius:12px;overflow:hidden;margin:8px 0 4px;background:#000}
+  .video-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
+  .vmeta{font-size:.85rem;color:var(--muted);margin-bottom:16px}
+  .vmeta b{color:var(--ink)}
+  .focus{font-size:1.05rem;font-weight:700;margin-bottom:2px}
+  .warmup{font-size:.88rem;background:var(--accent-soft);
+    padding:8px 12px;border-radius:8px;margin:8px 0 14px;color:var(--accent-ink)}
+  .done-row{display:flex;gap:10px;align-items:center;margin-top:6px}
+  .done-btn{flex:1;padding:12px;border-radius:12px;font-weight:700;font-size:1rem;
+    background:var(--accent-soft);color:var(--accent-ink)}
+  .done-btn.on{background:var(--good);color:#fff}
+  .streak{font-size:.85rem;color:var(--muted);white-space:nowrap}
+  .footer{font-size:.78rem;color:var(--muted);text-align:center;margin-top:24px;line-height:1.6}
+  .note{font-size:.82rem;color:var(--muted);margin-top:8px}
+  .block-view{text-align:center;padding:30px 18px}
+  .block-view .em{font-size:2.4rem}
+  .macro{font-size:.85rem;color:var(--muted);margin-top:10px;background:#fbf8f6;padding:10px 12px;border-radius:8px}
+  .tools{display:flex;gap:10px;margin-top:8px}
+  .tools button{flex:1;padding:10px;border-radius:10px;background:var(--card);
+    border:1px solid var(--line);color:var(--ink);font-size:.88rem}
+  .rest .video-wrap{display:none}
+  a.link{color:var(--accent-ink)}
+  .done-view{text-align:center;padding:14px;background:var(--accent-soft);border-radius:12px;color:var(--accent-ink);font-weight:700;margin-bottom:16px}
+  .mrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--line);color:var(--ink);font-size:.95rem}
+  .mrow:last-child{border-bottom:none}
+  .mn{font-weight:700}
+  .mp{color:var(--muted);font-size:.88rem}
+  #groupCard input[type=text]{margin-top:4px}
+
+  /* ===== 파스텔 소프트 & 글로우 ===== */
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(26px)}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
+  .wrap{max-width:520px;padding:26px 18px 72px}
+  .hero{display:block;width:100%;max-width:260px;margin:0 auto 8px;filter:drop-shadow(0 12px 24px rgba(255,150,190,.28));animation:fadeUp .5s ease both}
+  .celebrate{display:block;width:128px;margin:0 auto 8px}
+  h1{font-size:1.72rem;font-weight:800;letter-spacing:-.5px;line-height:1.22;
+     background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  h2{font-size:1.08rem;font-weight:800;color:#5a4a55}
+  .sub{color:var(--muted);font-weight:500}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.65);border-radius:26px;padding:20px;
+     margin-bottom:18px;box-shadow:var(--glow),inset 0 1px 0 rgba(255,255,255,.7);
+     -webkit-backdrop-filter:blur(16px) saturate(1.25);backdrop-filter:blur(16px) saturate(1.25);
+     animation:fadeUp .45s ease both}
+  label{font-weight:700;color:#6a5a64;margin:16px 0 6px}
+  input,select{border:1.5px solid rgba(190,150,180,.3);border-radius:14px;background:rgba(255,255,255,.82);color:var(--ink);padding:13px}
+  input::placeholder{color:#c3b3bd}
+  input:focus,select:focus{outline:none;border-color:var(--pink);box-shadow:0 0 0 4px rgba(255,143,177,.18)}
+  .btn{background:linear-gradient(135deg,#ff9cbe,#b79bff);border-radius:18px;font-weight:800;
+     box-shadow:0 10px 26px rgba(255,140,190,.34);transition:transform .15s ease,box-shadow .15s ease}
+  .btn:hover{background:linear-gradient(135deg,#ff8db4,#aa8cff);transform:translateY(-2px);box-shadow:0 14px 32px rgba(255,140,190,.42)}
+  .btn.ghost{background:var(--accent-soft);color:var(--accent-ink);box-shadow:none}
+  .pill{background:linear-gradient(135deg,#ffe0ee,#ece1ff);color:var(--accent-ink);font-weight:800;padding:5px 14px}
+  .kcal{font-size:2.35rem;font-weight:800;letter-spacing:-1px;
+     background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .kcal small{-webkit-text-fill-color:var(--muted);color:var(--muted);font-weight:600}
+  .meal{border-bottom:1px dashed rgba(190,150,180,.3)}
+  .meal .t{color:var(--accent-ink)}
+  .daynav button{background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.7);border-radius:14px;
+     color:var(--accent-ink);font-weight:800;box-shadow:0 6px 18px rgba(200,160,190,.2)}
+  .daynav .now b{color:#5a4a55}
+  .video-wrap{border-radius:18px;box-shadow:0 8px 22px rgba(180,140,190,.22)}
+  .warmup{background:linear-gradient(135deg,#fff0f6,#f1ebff);color:var(--accent-ink);border-radius:12px;font-weight:600}
+  .done-btn{background:linear-gradient(135deg,#ffe0ee,#ece1ff);color:var(--accent-ink);border-radius:14px;transition:.15s}
+  .done-btn.on{background:linear-gradient(135deg,#6fd3a6,#4bbf90);color:#fff;box-shadow:0 8px 20px rgba(80,190,140,.32)}
+  .tools button{background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.7);border-radius:14px;
+     color:var(--accent-ink);font-weight:700;box-shadow:0 6px 18px rgba(200,160,190,.18)}
+  .banner.err{background:#ffe9f1;color:#b23a6d;border-color:#ffc9dc}
+  .macro{background:linear-gradient(135deg,rgba(255,240,247,.75),rgba(240,235,255,.75));border-radius:14px;color:#8a7a84}
+  .note{color:var(--muted)}
+  .done-view{background:linear-gradient(135deg,#ffe0ee,#e3d6ff);color:var(--accent-ink);border-radius:16px;
+     box-shadow:var(--glow);animation:pop .4s ease both}
+  .block-view .em{filter:drop-shadow(0 6px 12px rgba(255,150,190,.4))}
+  .mrow{border-bottom:1px dashed rgba(190,150,180,.3)}
+  a.link{color:var(--accent-ink);font-weight:700}
+  /* 그룹 진행 대시보드 */
+  .gsum{font-size:.86rem;color:#7a6a76;background:linear-gradient(135deg,#fff0f6,#f1ebff);
+     border-radius:13px;padding:10px 12px;margin-bottom:12px;text-align:center}
+  .gsum b{color:var(--accent-ink);font-weight:800}
+  .mcard{padding:9px 0}
+  .mcard+.mcard{border-top:1px dashed rgba(190,150,180,.28)}
+  .mtop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .mbar{height:9px;border-radius:999px;background:rgba(190,150,180,.18);overflow:hidden}
+  .mfill{height:100%;border-radius:999px;background:linear-gradient(90deg,#ff9cbe,#b79bff);
+     box-shadow:0 1px 6px rgba(255,140,190,.4);transition:width .6s ease}
+  .mcard.me .mn::after{content:" (나)";color:var(--muted);font-weight:600;font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ---------- 데이터: 검증된 운동 영상 풀(전부 oembed로 실재 확인) + 규칙 식단 (백엔드 없음) ---------- */
+const DATA = {
+  warmup: "제자리 걷기·팔·다리 돌리기 2~3분",
+  videos: {
+    A1:{title:"다이어트를 위한 10분 전신 유산소 (초급자 홈트 ver.)",channel:"제로키니",id:"4svDlVTjwMM"},
+    A2:{title:"10분 전신 다이어트 운동 (초보자도 쉽게)",channel:"권코치의 핏튜브",id:"DJ48Cnv0V-Q"},
+    A3:{title:"층간소음 없는 유산소 운동, 신나는 15분!",channel:"건강한 여정",id:"_y3EnjzqP_E"},
+    A4:{title:"집에서 칼로리 불태우는 홈트 유산소 - 가볍게 15분",channel:"비너스핏 Anybody",id:"pUq1JIQFMwE"},
+    A5:{title:"하루 15분! 전신 칼로리 불태우는 다이어트 운동",channel:"땅끄부부",id:"swRNeYw1JkY"},
+    A6:{title:"매일 10분. 전신운동 1~2단계",channel:"KSPO 국민체육진흥공단",id:"xt5WbUKZ_lA"},
+    A7:{title:"무조건 살이 쭉쭉 빠지는 전신 홈트",channel:"엄마TV",id:"62vhDOwrhcc"},
+    L1:{title:"예쁜 다리 만드는 허벅지 운동 (세모핏 #109)",channel:"굿라이프",id:"b4BumlGOgGk"},
+    C1:{title:"뱃살 쏙 빠지는 세상 쉬운 복부 코어 운동 (함아름 강사)",channel:"건나무TV",id:"xKRE0aTqAeU"},
+    C2:{title:"뱃살빼는 운동 10분 루틴 (카이스트 해리)",channel:"일지의 브레인TV",id:"ixMRvFiVjiA"},
+    C3:{title:"뱃살·내장지방 벽 짚고 하는 복부 운동",channel:"인간미 넘치는 건강멘토",id:"Rp397m7Dqo0"},
+    U1:{title:"여자 등 운동 루틴 (상체 긴 타입)",channel:"제이제이살롱드핏",id:"0cHUrFQdnho"},
+    U2:{title:"단기간에 확 빠지는 팔뚝살 운동 10분 (초보)",channel:"소피요가 Sophie Yoga",id:"X2VjRyQ5A64"},
+    U3:{title:"팔뚝살 타파 팔 운동 홈트",channel:"ns윤지",id:"tn_u7jpmK8M"},
+    S1:{title:"자기 전·아침에 따라하는 스트레칭",channel:"피지컬갤러리",id:"aTcbqto_Tg0"},
+    S2:{title:"자기 전 스트레칭 (GOOD NIGHT STRETCHING)",channel:"강하나 스트레칭",id:"Q-C_NUKQr9g"}
+  }
+};
+/* 주간 템플릿(7일 패턴)을 입력 기간(주)만큼 반복 → 기간에 맞는 프로그램 자동 생성 */
+const WEEK_TEMPLATE = [
+  {focus:"전신 유산소",      warmup:true,  pools:["cardio"]},
+  {focus:"하체 + 코어",      warmup:true,  pools:["lower","core"]},
+  {focus:"회복·스트레칭",     warmup:false, pools:["stretch"]},
+  {focus:"상체 + 코어",      warmup:true,  pools:["upper","core"]},
+  {focus:"전신 유산소",      warmup:true,  pools:["cardio"]},
+  {focus:"전신 근력·올인원",  warmup:true,  pools:["fullbody"]},
+  {focus:"휴식",            warmup:false, pools:["stretch"], rest:true}
+];
+const POOLS = {
+  cardio:["A1","A2","A3","A4","A5"],
+  fullbody:["A6","A7"],
+  lower:["L1"],
+  core:["C1","C2","C3"],
+  upper:["U1","U2","U3"],
+  stretch:["S1","S2"]
+};
+function buildProgram(weeks){
+  const ptr={}, days=[], total=weeks*7;
+  for(let i=0;i<total;i++){
+    const t=WEEK_TEMPLATE[i%7];
+    const main=t.pools.map(pn=>{
+      const arr=POOLS[pn]; const k=arr[(ptr[pn]||0)%arr.length]; ptr[pn]=(ptr[pn]||0)+1; return k;
+    });
+    days.push({day:i+1, week:Math.floor(i/7)+1, focus:t.focus, warmup:t.warmup, main, rest:!!t.rest});
+  }
+  return days;
+}
+
+const MACRO = "단백질을 매 끼 챙기고(체중 1kg당 약 1.2~1.6g), 정제 탄수화물·당류·튀김은 줄이고, 물을 충분히 드세요. 아래 식단은 예시 참고용이며 개인 알레르기·질환을 고려하세요.";
+const MEAL_BANDS = [
+  {upTo:1400,menus:[
+    {b:"오트밀 40g + 저지방우유 200ml + 바나나 ½",l:"닭가슴살 100g + 채소샐러드(드레싱 가볍게) + 방울토마토",d:"두부 ½모 + 현미밥 ⅓공기 + 나물·김치",s:"무가당 그릭요거트 + 아몬드 5알",t:"약 1,300kcal"},
+    {b:"삶은 달걀 2개 + 방울토마토 + 블랙커피",l:"잡곡밥 ½공기 + 미역국 + 계란찜 + 나물",d:"연어구이 100g + 구운 채소",s:"사과 ½ + 무가당 두유",t:"약 1,300kcal"},
+    {b:"고구마 1개(150g) + 저지방우유 200ml",l:"닭가슴살 샐러드랩 1개",d:"순두부찌개(싱겁게) + 잡곡밥 ⅓공기",s:"무가당 요거트 + 블루베리 한 줌",t:"약 1,300kcal"}
+  ]},
+  {upTo:1600,menus:[
+    {b:"현미밥 ⅓공기 + 계란프라이 2개 + 김치 + 나물",l:"닭가슴살 120g + 고구마 1개 + 채소샐러드",d:"두부김치 + 잡곡밥 ½공기 + 미역국",s:"그릭요거트 + 방울토마토",t:"약 1,500kcal"},
+    {b:"통밀식빵 2장 + 계란 + 토마토 + 저지방우유",l:"비빔밥(밥 ½공기, 나물 듬뿍, 고추장 적게) + 계란",d:"닭가슴살 스테이크 120g + 구운 채소",s:"바나나 1개 + 아몬드 6알",t:"약 1,500kcal"},
+    {b:"오트밀 50g + 두유 + 블루베리",l:"현미밥 ½공기 + 된장찌개(싱겁게) + 생선구이 + 나물",d:"닭가슴살 샐러드 + 고구마 ½",s:"무가당 요거트 + 견과 한 줌",t:"약 1,500kcal"}
+  ]},
+  {upTo:1800,menus:[
+    {b:"잡곡밥 ½공기 + 계란 2개 + 나물 + 김",l:"닭가슴살 150g + 현미밥 ½공기 + 채소",d:"두부·야채볶음 + 잡곡밥 ½공기 + 국",s:"그릭요거트 + 과일 + 아몬드",t:"약 1,700kcal"},
+    {b:"통밀샌드위치(계란·야채) + 저지방우유",l:"비빔밥 + 계란 + 미역국",d:"연어구이 150g + 구운 채소 + 현미밥 ⅓공기",s:"바나나 + 두유",t:"약 1,700kcal"},
+    {b:"현미밥 ½공기 + 계란찜 + 나물 + 김치",l:"닭가슴살 덮밥(밥 ½공기) + 샐러드",d:"된장찌개 + 잡곡밥 ½공기 + 생선구이",s:"요거트 + 블루베리 + 견과",t:"약 1,700kcal"}
+  ]},
+  {upTo:99999,menus:[
+    {b:"잡곡밥 ½공기 + 계란 2개 + 나물 + 두유",l:"닭가슴살 170g + 현미밥 ⅔공기 + 채소샐러드",d:"소고기 안심 120g + 잡곡밥 ½공기 + 나물·국",s:"그릭요거트 + 과일 + 견과 한 줌",t:"약 1,900kcal"},
+    {b:"오트밀 60g + 우유 + 바나나 + 견과",l:"비빔밥(밥 ⅔공기) + 계란 2개 + 국",d:"닭가슴살·두부 스테이크 + 구운 채소 + 현미밥 ½공기",s:"통밀토스트 1장 + 땅콩버터 약간",t:"약 1,900kcal"},
+    {b:"통밀샌드위치 + 계란 + 저지방우유 + 과일",l:"현미밥 ⅔공기 + 생선구이 + 된장찌개 + 나물",d:"닭가슴살 150g + 고구마 1개 + 샐러드",s:"그릭요거트 + 블루베리 + 아몬드",t:"약 1,900kcal"}
+  ]}
+];
+const ACT = {sedentary:{f:1.2,l:"거의 안 함 (좌식)"},light:{f:1.375,l:"가벼운 활동 (주 1~3일)"},moderate:{f:1.55,l:"보통 (주 3~5일)"},active:{f:1.725,l:"활발 (주 6~7일)"}};
+
+/* ---------- 저장: 프로필=URL 해시 p=(개인·비공유), 그룹연동=URL 해시 g=(초대용), 완료기록=localStorage ---------- */
+function saveProfile(p){ try{ const g=location.hash.match(/g=([^&]+)/); let h="p="+btoa(encodeURIComponent(JSON.stringify(p))); if(g) h+="&g="+g[1]; location.hash=h; }catch(e){} }
+function loadProfile(){
+  try{ const m=location.hash.match(/p=([^&]+)/); if(!m) return null;
+    return JSON.parse(decodeURIComponent(atob(m[1]))); }catch(e){ return null; }
+}
+let _mem=[];
+function loadDone(){ try{ return JSON.parse(localStorage.getItem("diet_done")||"[]"); }catch(e){ return _mem; } }
+function saveDone(a){ try{ localStorage.setItem("diet_done",JSON.stringify(a)); }catch(e){ _mem=a; } }
+
+/* ---------- 함께하기(그룹): 구글시트 + Apps Script, JSONP로 CORS 없이 읽기·쓰기 ---------- */
+function loadGroup(){ try{ const m=location.hash.match(/g=([^&]+)/); if(!m) return {}; return JSON.parse(decodeURIComponent(atob(m[1]))); }catch(e){ return {}; } }
+function saveGroup(g){ const pm=location.hash.match(/p=([^&]+)/); let h=pm?("p="+pm[1]):""; if(g&&g.endpoint){ h+=(h?"&":"")+"g="+btoa(encodeURIComponent(JSON.stringify({endpoint:g.endpoint}))); } location.hash=h; }
+function inviteLink(){ const g=loadGroup(); const base=location.href.split("#")[0]; return base+"#g="+btoa(encodeURIComponent(JSON.stringify({endpoint:g.endpoint}))); }
+function jsonp(params){ return new Promise((res,rej)=>{ const g=loadGroup(); if(!g.endpoint) return rej("no-endpoint");
+  const cb="__cb"+Math.random().toString(36).slice(2); const s=document.createElement("script");
+  const to=setTimeout(()=>{ cleanup(); rej("timeout"); },8000);
+  function cleanup(){ clearTimeout(to); try{ delete window[cb]; }catch(e){} if(s.parentNode) s.remove(); }
+  window[cb]=(d)=>{ cleanup(); res(d); };
+  s.onerror=()=>{ cleanup(); rej("net"); };
+  const q=new URLSearchParams(Object.assign({},params,{callback:cb,_:Date.now()}));
+  s.src=g.endpoint+(g.endpoint.indexOf("?")<0?"?":"&")+q.toString(); document.body.appendChild(s); }); }
+function postProgress(p){ const g=loadGroup(); if(!g.endpoint||!p.name) return Promise.resolve(null);
+  const total=p.weeks*7; const done=loadDone().filter(d=>d>=1&&d<=total).length;
+  return jsonp({action:"update",group:"main",name:p.name,total:total,done:done,achieved:p.achieved?"1":"0"}).catch(()=>null); }
+
+/* ---------- 계산 (Mifflin-St Jeor, 여성) + 안전 게이트 ---------- */
+function compute(p){
+  const hM=p.height/100;
+  const bmr=10*p.curWeight+6.25*p.height-5*p.age-161;      // 여성 공식
+  const tdee=bmr*ACT[p.activity].f;
+  const targetBMI=p.targetWeight/(hM*hM);
+  const minHealthy=18.5*hM*hM;
+  const totalLoss=p.curWeight-p.targetWeight;
+  const weeklyRate=totalLoss/p.weeks;
+  const FLOOR=1200; let target=Math.round(tdee-500), floored=false;   // 약 0.5kg/주 적자
+  if(target<FLOOR){ target=FLOOR; floored=true; }
+  return {bmr,tdee,targetBMI,minHealthy,totalLoss,weeklyRate,target,floored};
+}
+function validate(p){
+  const errs=[], hard=[];
+  if(p.pregnant) hard.push("임신 또는 수유 중이라고 표시하셨어요. 이 시기에는 임의로 체중 감량을 하면 안 됩니다. 산부인과·전문의와 상담해 주세요.");
+  if(p.eatingDisorder) hard.push("섭식장애 이력을 표시하셨어요. 이 앱 대신 전문가(정신건강의학과·영양 전문가)의 도움을 받는 것을 권합니다.");
+  if(hard.length) return {hard};
+  const c=compute(p);
+  if(c.totalLoss<=0) errs.push("목표 체중이 현재와 같거나 더 높아요. 이 앱은 체중 감량용이에요 — 목표를 현재보다 낮게 입력해 주세요.");
+  if(c.targetBMI<18.5) errs.push("목표 체중이 저체중(BMI 18.5 미만) 범위예요. 건강을 위해 목표를 최소 약 "+c.minHealthy.toFixed(1)+"kg 이상으로 조정해 주세요.");
+  if(c.weeklyRate>1) errs.push("이 기간에는 주당 "+c.weeklyRate.toFixed(2)+"kg 감량이 필요해요. 안전 범위는 주 0.5~1kg예요 — 기간을 최소 "+Math.ceil(c.totalLoss/1)+"주로 늘리거나 목표를 완화해 주세요.");
+  return {errs,c};
+}
+
+/* ---------- 화면 ---------- */
+const app=document.getElementById("app");
+function esc(s){return String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));}
+
+function renderOnboard(prefill,msg){
+  const p=prefill||{};
+  app.innerHTML=`
+    <img class="hero" src="images/hero.png" alt="" onerror="this.style.display='none'">
+    <h1>홈트 다이어트 코치</h1>
+    <p class="sub">여성 초보자용 · 집에서 · 무기구 · MVP 테스트판</p>
+    <div class="card">
+      <h2>내 정보 입력</h2>
+      <div class="row">
+        <div><label>나이</label><input id="age" type="number" inputmode="numeric" value="${p.age||''}" placeholder="예: 29"></div>
+        <div><label>키 (cm)</label><input id="height" type="number" inputmode="decimal" value="${p.height||''}" placeholder="예: 162"></div>
+      </div>
+      <div class="row">
+        <div><label>현재 체중 (kg)</label><input id="curWeight" type="number" inputmode="decimal" value="${p.curWeight||''}" placeholder="예: 62"></div>
+        <div><label>목표 체중 (kg)</label><input id="targetWeight" type="number" inputmode="decimal" value="${p.targetWeight||''}" placeholder="예: 57"></div>
+      </div>
+      <label>다이어트 기간 (주) — 이 기간에 맞춰 홈트 프로그램이 짜여요</label>
+      <input id="weeks" type="number" inputmode="numeric" value="${p.weeks||''}" placeholder="예: 8">
+      <label>평소 활동량</label>
+      <select id="activity">
+        ${Object.entries(ACT).map(([k,v])=>`<option value="${k}" ${p.activity===k?'selected':''}>${v.l}</option>`).join('')}
+      </select>
+      <label>그룹에서 보일 이름 (선택 · 함께하기용)</label>
+      <input id="dispName" type="text" maxlength="20" value="${p.name?esc(p.name):''}" placeholder="예: 상협">
+      <label class="check"><input id="pregnant" type="checkbox" ${p.pregnant?'checked':''}> 현재 임신 또는 수유 중이에요</label>
+      <label class="check"><input id="eatingDisorder" type="checkbox" ${p.eatingDisorder?'checked':''}> 섭식장애를 겪었거나 겪고 있어요</label>
+      <div id="banner" class="banner ${msg?'show err':''}">${msg||''}</div>
+      <button class="btn" id="go">내 플랜 만들기</button>
+      <p class="note">입력 정보는 서버로 전송되지 않고 이 페이지 주소(URL)에만 저장돼요. 이 페이지를 즐겨찾기 하면 내 플랜이 유지됩니다.</p>
+    </div>
+    <p class="footer">이 앱은 일반적인 건강 정보 제공용이며 의료 조언이 아닙니다.<br>지병·복용약이 있으면 시작 전 전문의와 상담하세요.</p>`;
+  document.getElementById("go").onclick=()=>{
+    const p2={
+      age:+document.getElementById("age").value,
+      height:+document.getElementById("height").value,
+      curWeight:+document.getElementById("curWeight").value,
+      targetWeight:+document.getElementById("targetWeight").value,
+      weeks:+document.getElementById("weeks").value,
+      activity:document.getElementById("activity").value,
+      name:(document.getElementById("dispName").value||"").trim(),
+      achieved:(prefill&&prefill.achieved)||false,
+      pregnant:document.getElementById("pregnant").checked,
+      eatingDisorder:document.getElementById("eatingDisorder").checked
+    };
+    if(!p2.age||!p2.height||!p2.curWeight||!p2.targetWeight||!p2.weeks)
+      return renderOnboard(p2,"모든 칸을 채워 주세요.");
+    if(p2.age<15||p2.age>90||p2.height<120||p2.height>210)
+      return renderOnboard(p2,"나이·키를 다시 확인해 주세요.");
+    if(p2.weeks<1||p2.weeks>52)
+      return renderOnboard(p2,"다이어트 기간은 1~52주 사이로 입력해 주세요.");
+    const v=validate(p2);
+    if(v.hard) return renderBlock(v.hard[0]);
+    if(v.errs && v.errs.length) return renderOnboard(p2,v.errs.join("<br><br>"));
+    p2.startDate=new Date().toISOString().slice(0,10);
+    saveProfile(p2);
+    renderDash(p2,currentDayFor(p2));
+  };
+}
+
+function renderBlock(msg){
+  app.innerHTML=`<div class="card block-view">
+    <div class="em">🌿</div>
+    <h2>잠깐, 안전이 먼저예요</h2>
+    <p class="sub" style="margin-top:8px">${msg}</p>
+    <button class="btn ghost" onclick="location.hash='';start()">처음으로</button>
+  </div>
+  <p class="footer">이 앱은 의료 조언이 아니며, 건강이 우선입니다.</p>`;
+}
+
+function bandMenus(target){ return (MEAL_BANDS.find(b=>target<=b.upTo)||MEAL_BANDS[MEAL_BANDS.length-1]).menus; }
+function totalDays(p){ return p.weeks*7; }
+function currentDayFor(p){
+  const start=new Date(p.startDate+"T00:00:00");
+  const today=new Date(); today.setHours(0,0,0,0);
+  const diff=Math.floor((today-start)/86400000)+1;
+  return Math.min(totalDays(p),Math.max(1,diff||1));
+}
+
+function renderDash(p,day){
+  const c=compute(p);
+  const program=buildProgram(p.weeks);
+  const total=program.length;
+  day=Math.min(total,Math.max(1,day));
+  const plan=program[day-1];
+  const menu=bandMenus(c.target)[(day-1)%3];
+  const done=loadDone();
+  const isDone=done.includes(day);
+  const doneInRange=done.filter(d=>d>=1&&d<=total).length;
+  const vids=plan.main.map(k=>DATA.videos[k]).filter(Boolean);
+  const finished=currentDayFor(p)>=total && day===total;
+  app.innerHTML=`
+    <h1>오늘의 플랜</h1>
+    <p class="sub">목표 ${p.targetWeight}kg · ${p.weeks}주(${total}일) · 안전 속도 주 ${Math.min(1,c.weeklyRate).toFixed(2)}kg</p>
+
+    ${finished?`<div class="done-view"><img class="celebrate" src="images/celebrate.png" alt="" onerror="this.style.display='none'">🎉 ${p.weeks}주 프로그램의 마지막 날이에요. 정말 잘 해냈어요!</div>`:``}
+
+    <div class="daynav">
+      <button id="prev" ${day<=1?'disabled':''}>‹</button>
+      <div class="now">
+        <span class="pill">DAY ${day} / ${total}</span>
+        <div><b>${esc(plan.focus)}</b></div>
+        <span class="wk">${plan.week}주차</span>
+      </div>
+      <button id="next" ${day>=total?'disabled':''}>›</button>
+    </div>
+
+    <div class="card">
+      <h2>🍽️ 오늘의 식단</h2>
+      <div class="kcal">${c.target.toLocaleString()}<small> kcal / 일 목표</small></div>
+      ${c.floored?`<p class="note" style="color:var(--warn)">계산상 더 낮았지만 건강 최소선(1,200kcal)으로 올렸어요.</p>`:``}
+      <div style="margin-top:10px">
+        <div class="meal"><div class="t">아침</div><div class="d">${esc(menu.b)}</div></div>
+        <div class="meal"><div class="t">점심</div><div class="d">${esc(menu.l)}</div></div>
+        <div class="meal"><div class="t">저녁</div><div class="d">${esc(menu.d)}</div></div>
+        <div class="meal"><div class="t">간식</div><div class="d">${esc(menu.s)}</div></div>
+      </div>
+      <div class="macro">${MACRO}</div>
+    </div>
+
+    <div class="card ${plan.rest?'rest':''}">
+      <h2>🏃‍♀️ 오늘의 운동</h2>
+      <div class="focus">${esc(plan.focus)}</div>
+      ${plan.rest?`<p class="sub">오늘은 휴식일이에요. 가벼운 산책과 아래 스트레칭을 추천해요.</p>`:``}
+      ${plan.warmup?`<div class="warmup">워밍업 · ${esc(DATA.warmup)}</div>`:``}
+      ${vids.map(v=>`
+        <div class="video-wrap"><iframe src="https://www.youtube.com/embed/${v.id}" title="${esc(v.title)}" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy"></iframe></div>
+        <div class="vmeta"><b>${esc(v.title)}</b><br>${esc(v.channel)} · <a class="link" href="https://youtu.be/${v.id}" target="_blank" rel="noopener">유튜브에서 열기</a></div>
+      `).join('')}
+      <div class="done-row">
+        <button class="done-btn ${isDone?'on':''}" id="done">${isDone?'✓ 오늘 완료!':'오늘 완료 체크'}</button>
+        <span class="streak">완료 ${doneInRange} / ${total}일</span>
+      </div>
+    </div>
+
+    <div class="card" id="groupCard"></div>
+
+    <div class="tools">
+      <button id="share">오늘 플랜 공유</button>
+      <button id="reset">내 정보 다시 설정</button>
+    </div>
+
+    <p class="footer">이 앱은 일반 건강 정보 제공용이며 의료 조언이 아닙니다. 통증·어지럼이 있으면 즉시 멈추세요.<br>임신·수유·질환이 있으면 전문의와 상담하세요.</p>`;
+
+  const pv=document.getElementById("prev"), nx=document.getElementById("next");
+  if(pv) pv.onclick=()=>renderDash(p,day-1);
+  if(nx) nx.onclick=()=>renderDash(p,day+1);
+  document.getElementById("done").onclick=()=>{
+    let d=loadDone(); if(d.includes(day)) d=d.filter(x=>x!==day); else d.push(day);
+    saveDone(d); renderDash(p,day);
+  };
+  document.getElementById("reset").onclick=()=>{ location.hash=''; start(); };
+  document.getElementById("share").onclick=()=>{
+    const txt=`[오늘의 다이어트 플랜 · DAY ${day}/${total}]\n목표 칼로리 ${c.target}kcal\n운동: ${plan.focus}\n${vids.map(v=>'▶ '+v.title+' ('+v.channel+') https://youtu.be/'+v.id).join('\n')}`;
+    if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); }
+    else if(navigator.clipboard){ navigator.clipboard.writeText(txt); alert("오늘 플랜을 복사했어요. 카톡에 붙여넣기 하세요!"); }
+    else { alert(txt); }
+  };
+
+  renderGroupCard(p);
+  postProgress(p);
+}
+
+/* ---------- 함께하기 카드 ---------- */
+function renderGroupCard(p){
+  const el=document.getElementById("groupCard"); if(!el) return;
+  const g=loadGroup();
+  if(!g.endpoint){
+    el.innerHTML=`<h2>👭 함께하기 (선택)</h2>
+      <p class="note">최대 3명을 초대해 서로의 진행률·목표달성을 확인할 수 있어요. 먼저 구글 시트 연동 주소(Apps Script 웹앱 URL)가 필요해요 — 동봉한 설정 가이드를 한 번만 따라 하면 돼요.</p>
+      <label>연동 주소 (Apps Script 웹앱 URL)</label>
+      <input id="epInput" type="text" placeholder="https://script.google.com/macros/s/.../exec">
+      <button class="btn" id="epGo">그룹 시작</button>`;
+    el.querySelector("#epGo").onclick=()=>{
+      const ep=el.querySelector("#epInput").value.trim();
+      if(!/^https:\/\/script\.google\.com\/macros\/.*\/exec/.test(ep)){ alert("올바른 Apps Script 웹앱 URL을 붙여넣어 주세요. (…/exec 로 끝나야 해요)"); return; }
+      saveGroup({endpoint:ep}); postProgress(p); renderGroupCard(p);
+    };
+    return;
+  }
+  el.innerHTML=`<h2>👭 우리 그룹</h2>
+    <label class="check" style="margin-top:0"><input id="achv" type="checkbox" ${p.achieved?"checked":""}> 나는 목표를 달성했어요 🎉 (그룹에 공유)</label>
+    <div id="board" class="note" style="margin-top:12px">불러오는 중…</div>
+    <div class="tools"><button id="invite">초대 링크 복사</button><button id="refresh">새로고침</button></div>
+    <p class="note">진행률·목표달성 여부만 공유돼요. 체중 등 개인정보는 공유되지 않아요.</p>`;
+  el.querySelector("#achv").onchange=(e)=>{ p.achieved=e.target.checked; saveProfile(p); postProgress(p).then(()=>loadBoard()); };
+  el.querySelector("#invite").onclick=()=>{ const L=inviteLink(); if(navigator.clipboard){ navigator.clipboard.writeText(L); alert("초대 링크를 복사했어요. 카톡으로 친구에게 보내세요!\n(내 개인정보는 링크에 포함되지 않아요)"); } else alert(L); };
+  el.querySelector("#refresh").onclick=()=>loadBoard();
+  loadBoard();
+}
+function loadBoard(){
+  const b=document.getElementById("board"); if(!b) return;
+  const me=((loadProfile()||{}).name||"").trim();
+  jsonp({action:"list",group:"main"}).then(d=>{
+    if(!d||!d.ok||!Array.isArray(d.members)){ b.textContent="아직 그룹 데이터를 불러올 수 없어요. 설정을 확인해 주세요."; return; }
+    if(!d.members.length){ b.textContent="아직 참여자가 없어요. 초대 링크를 보내보세요!"; return; }
+    const totalDone=d.members.reduce((s,m)=>s+(+m.done||0),0);
+    const avg=Math.round(d.members.reduce((s,m)=>s+(m.total?(m.done/m.total*100):0),0)/d.members.length);
+    const rows=d.members.map(m=>{
+      const pct=m.total?Math.min(100,Math.round(m.done/m.total*100)):0;
+      const mine=(m.name||"").trim()===me;
+      return `<div class="mcard${mine?" me":""}">`
+        +`<div class="mtop"><span class="mn">${esc(m.name)}${m.achieved?" 🎉":""}</span>`
+        +`<span class="mp">${m.done}/${m.total}일 · ${pct}%${m.achieved?" · 목표달성":""}</span></div>`
+        +`<div class="mbar"><div class="mfill" style="width:${pct}%"></div></div></div>`;
+    }).join("");
+    b.innerHTML=`<div class="gsum">함께 완료한 날 <b>${totalDone}</b>일 · 그룹 평균 <b>${avg}%</b></div>`+rows;
+  }).catch(()=>{ b.textContent="연결 대기 중… 창작자가 그룹 설정을 마치면 표시돼요."; });
+}
+
+function start(){
+  const p=loadProfile();
+  if(p && p.startDate) renderDash(p,currentDayFor(p));
+  else renderOnboard();
+}
+start();
+</script>
+</body>
+</html>
