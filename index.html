@@ -283,19 +283,36 @@ const MEAL_BANDS = [
 ];
 const ACT = {sedentary:{f:1.2,l:"거의 안 함 (좌식)"},light:{f:1.375,l:"가벼운 활동 (주 1~3일)"},moderate:{f:1.55,l:"보통 (주 3~5일)"},active:{f:1.725,l:"활발 (주 6~7일)"}};
 
-/* ---------- 저장: 프로필=URL 해시 p=(개인·비공유), 그룹연동=URL 해시 g=(초대용), 완료기록=localStorage ---------- */
-function saveProfile(p){ try{ const g=location.hash.match(/g=([^&]+)/); let h="p="+btoa(encodeURIComponent(JSON.stringify(p))); if(g) h+="&g="+g[1]; location.hash=h; }catch(e){} }
-function loadProfile(){
-  try{ const m=location.hash.match(/p=([^&]+)/); if(!m) return null;
-    return JSON.parse(decodeURIComponent(atob(m[1]))); }catch(e){ return null; }
-}
+/* ---------- 저장: localStorage 우선(브라우저 껐다 켜도 유지) + URL 해시(공유·즐겨찾기 호환) ---------- */
 let _mem=[];
-function loadDone(){ try{ return JSON.parse(localStorage.getItem("diet_done")||"[]"); }catch(e){ return _mem; } }
-function saveDone(a){ try{ localStorage.setItem("diet_done",JSON.stringify(a)); }catch(e){ _mem=a; } }
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+function saveProfile(p){
+  lsSet("diet_profile", JSON.stringify(p));
+  try{ const g=location.hash.match(/g=([^&]+)/); let h="p="+btoa(encodeURIComponent(JSON.stringify(p))); if(g) h+="&g="+g[1]; location.hash=h; }catch(e){}
+}
+function loadProfile(){
+  try{ const m=location.hash.match(/p=([^&]+)/); if(m){ const p=JSON.parse(decodeURIComponent(atob(m[1]))); lsSet("diet_profile",JSON.stringify(p)); return p; } }catch(e){}
+  try{ const s=lsGet("diet_profile"); if(s) return JSON.parse(s); }catch(e){}
+  return null;
+}
+function loadDone(){ try{ return JSON.parse(lsGet("diet_done")||"[]"); }catch(e){ return _mem; } }
+function saveDone(a){ lsSet("diet_done",JSON.stringify(a)); _mem=a; }
 
 /* ---------- 함께하기(그룹): 구글시트 + Apps Script, JSONP로 CORS 없이 읽기·쓰기 ---------- */
-function loadGroup(){ try{ const m=location.hash.match(/g=([^&]+)/); if(!m) return {}; return JSON.parse(decodeURIComponent(atob(m[1]))); }catch(e){ return {}; } }
-function saveGroup(g){ const pm=location.hash.match(/p=([^&]+)/); let h=pm?("p="+pm[1]):""; if(g&&g.endpoint){ h+=(h?"&":"")+"g="+btoa(encodeURIComponent(JSON.stringify({endpoint:g.endpoint}))); } location.hash=h; }
+function loadGroup(){
+  try{ const m=location.hash.match(/g=([^&]+)/); if(m){ const g=JSON.parse(decodeURIComponent(atob(m[1]))); lsSet("diet_group",JSON.stringify(g)); return g; } }catch(e){}
+  try{ const s=lsGet("diet_group"); if(s) return JSON.parse(s); }catch(e){}
+  return {};
+}
+function saveGroup(g){
+  const obj=(g&&g.endpoint)?{endpoint:g.endpoint}:{};
+  lsSet("diet_group", JSON.stringify(obj));
+  const pm=location.hash.match(/p=([^&]+)/); let h=pm?("p="+pm[1]):"";
+  if(g&&g.endpoint){ h+=(h?"&":"")+"g="+btoa(encodeURIComponent(JSON.stringify({endpoint:g.endpoint}))); }
+  location.hash=h;
+}
 function inviteLink(){ const g=loadGroup(); const base=location.href.split("#")[0]; return base+"#g="+btoa(encodeURIComponent(JSON.stringify({endpoint:g.endpoint}))); }
 function jsonp(params){ return new Promise((res,rej)=>{ const g=loadGroup(); if(!g.endpoint) return rej("no-endpoint");
   const cb="__cb"+Math.random().toString(36).slice(2); const s=document.createElement("script");
@@ -601,7 +618,7 @@ function confirmReset(){
   const close=()=>ov.remove();
   ov.querySelector("#cCancel").onclick=close;
   ov.addEventListener("click",e=>{ if(e.target===ov) close(); });
-  ov.querySelector("#cOk").onclick=()=>{ close(); location.hash=""; start(); };
+  ov.querySelector("#cOk").onclick=()=>{ close(); lsDel("diet_profile"); lsDel("diet_group"); location.hash=""; start(); };
 }
 function start(){
   const p=loadProfile();
